@@ -8,6 +8,8 @@
                  [org.clojure/data.json "0.2.6"]
                  ;;[nz.ac.waikato.cms.weka/weka-stable "3.6.13"]
                  [nz.ac.waikato.cms.weka/weka-dev "3.7.13"]
+                 [ring/ring-core "1.4.0"]
+                 [ring/ring-jetty-adapter "1.4.0"]
                  ]
-  :main weka-classifier.core/main
+  :main weka-classifier.core
   )

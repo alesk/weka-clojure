@@ -1,3 +1,5 @@
+;; use lein test-refresh to run continuous testing
+
 (ns weka-classifier.logit-boost-test
   (:use clojure.test)
   (:require [weka-classifier.logit-boost :as lb]))
