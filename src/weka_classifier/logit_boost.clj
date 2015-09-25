@@ -40,21 +40,21 @@
       (.setClassifier boostClassifier)
       (.setCostMatrix costMatrix) )))
 
-
-(defn cross-validate [classifier, features, target-recall]
+(defn cross-validate [classifier features num-folds]
   (let [ev (Evaluation. features)
-        tc (ThresholdCurve.)
-        positive-tp? (fn [i] (> (get-classifier-value :true-positives i) 0))
-        recall-dist (fn [i] (Math/abs (- (get-classifier-value :recall i) target-recall)))
-        ]
+        tc (ThresholdCurve.)]
+    (.crossValidateModel ev classifier features 10 (Random. 1) (into-array []))
+    (.getCurve tc (.predictions ev))))
 
-    (do
-      (.crossValidateModel ev classifier features 10 (Random. 1) (into-array []))
-      (let [curve  (.getCurve tc (.predictions ev))
-            instances (for [i (range 0 (.numInstances curve))] (.instance curve i))
-            best-instance (->> instances (filter positive-tp?) (apply min-key recall-dist))
-            ]
-        (classifier-instance-to-map best-instance)))))
+
+
+(defn filter-by-recall [curve target-recall]
+  (let [positive-tp? (fn [i] (pos? (get-classifier-value :true-positives i) ))
+        recall-dist (fn [i] (Math/abs (- (get-classifier-value :recall i) target-recall)))
+        instances (for [i (range 0 (.numInstances curve))] (.instance curve i))
+        best-instance (->> instances (filter positive-tp?) (apply min-key recall-dist))
+        ]
+        (classifier-instance-to-map best-instance)))
 
 
 ;; Extracts decision stumps

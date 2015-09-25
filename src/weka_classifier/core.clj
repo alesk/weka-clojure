@@ -8,28 +8,32 @@
   [weka.core Attribute Instance Range]
   [weka.core.converters ConverterUtils$DataSource]
   [weka.classifiers CostMatrix Evaluation]
-  [weka.classifiers CostMatrix Evaluation]
   [weka.classifiers.evaluation ThresholdCurve]
   [weka.classifiers.evaluation.output.prediction PlainText])
   )
 
-
+(defn read-features [filename label]
+        (let [features (-> filename (ConverterUtils$DataSource.) (.getDataSet))]
+          (.setClass features (.attribute features label))
+          features))
 
 (defn classify []
   (let [
-        features (-> "/Users/ales/tmp/features.base.csv" (ConverterUtils$DataSource.) (.getDataSet))
-        cs (lb/create-classifier)]
+        features (read-features "/Users/ales/tmp/features.base.csv" "outcome")
+        cs (doto (lb/create-classifier) (.buildClassifier features))
+        curve (lb/cross-validate cs features 10)
+        ]
 
-    (do
-      (.setClass features (.attribute features "outcome"))
-      (.buildClassifier cs features)
+      ;;(.buildClassifier cs features)
+
       {:classifiers {
-                     :low-sensitive   (lb/cross-validate cs features 0.9)
-                     :high-sensitive  (lb/cross-validate cs features 0.5)
+                     :low-sensitive   (lb/filter-by-recall curve 0.9)
+                     :high-sensitive  (lb/filter-by-recall curve 0.5)
                      }
        :classifiers-text-output (str cs)
        :decision-stumps (lb/parse-state (str cs))
-       })))
+       }))
+
 
 (defn handler [request]
   {:status 200
@@ -39,5 +43,4 @@
 
 (defn -main []
   (jetty/run-jetty handler {:port 3000}))
-
 
