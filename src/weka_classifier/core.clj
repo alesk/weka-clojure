@@ -1,7 +1,13 @@
 (ns weka-classifier.core
   (:require [weka-classifier.logit-boost :as lb]
             [clojure.data.json :as json]
-            [ring.adapter.jetty :as jetty])
+            [ring.middleware.json :as  middleware]
+            [ring.util.response :refer [response]]
+            [ring.adapter.jetty :as jetty]
+            [compojure.core :refer :all]
+            [compojure.handler :as handler]
+            [compojure.route :as route]
+            [org.httpkit.server :refer [run-server]])
 
   (:import  [java.util Random]
             [java.lang Math]
@@ -17,7 +23,7 @@
           (.setClass features (.attribute features label))
           features))
 
-(defn classify []
+(defn classify [filename]
   (let [
         features (read-features "/Users/ales/tmp/features.base.csv" "outcome")
         cs (doto (lb/create-classifier) (.buildClassifier features))
@@ -36,11 +42,26 @@
 
 
 (defn handler [request]
-  {:status 200
-   :headers {"Content-Type" "text/json"}
-   :body (json/write-str (classify))
-   })
+  (let [params (:json-params request)
+        features-file (:features_file params)]
+
+  (response (classify features-file))))
+
+(defn evaluate-classifier [request])
+
+(defroutes app-routes
+  (GET "/" [] "Simple classifier evaluation")
+  (GET "/hello" [] "Hello")
+  (POST "/evaluate" [] handler)
+  )
+
+
+        ;; define the ring application
+(def app
+  (-> (handler/api app-routes)
+      (middleware/wrap-json-body)
+      (middleware/wrap-json-params)
+      (middleware/wrap-json-response)))
 
 (defn -main []
-  (jetty/run-jetty handler {:port 3000}))
-
+  (run-server app {:port 3000 :join? false}))

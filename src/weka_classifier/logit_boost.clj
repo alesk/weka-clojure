@@ -1,10 +1,9 @@
 (ns weka-classifier.logit-boost
-  (:import [java.util Random])
-  (:import [weka.classifiers.meta LogitBoost CostSensitiveClassifier])
-  (:import [weka.classifiers CostMatrix Evaluation])
-  (:import [weka.classifiers.evaluation ThresholdCurve])
-  (:import [weka.classifiers.trees DecisionStump])
-  )
+  (:import java.util.Random
+          [weka.classifiers.meta LogitBoost CostSensitiveClassifier]
+  [weka.classifiers CostMatrix Evaluation]
+  [weka.classifiers.evaluation ThresholdCurve]
+  [weka.classifiers.trees DecisionStump]))
 
 (def classifier-instance-values
   [:true-positives
@@ -87,10 +86,14 @@
         stumps  (->> state (re-seq stump-pred-reg) (map rest) (map trim-seq) (partition 3))
 
 
-        parse-stump (fn [[[variable operator threshold true-value]
+        parse-stump (fn [idx
+                         [[variable operator threshold true-value]
                           [_ _ _ false-value]
                           [_ _ _ na-value]]]
-                      [variable operator threshold true-value false-value na-value])
+
+                      (zipmap
+                       [:idx :variable :operator :threshold :true_value :false_value :na_value]
+                       [idx variable operator threshold true-value false-value na-value]))
         ]
     {:label label
-     :stumps (map parse-stump stumps)}))
+     :stumps (map-indexed parse-stump stumps)}))
