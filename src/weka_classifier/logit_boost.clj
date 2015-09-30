@@ -77,10 +77,6 @@
     ev))
 
 
-;; TODO extract instances
-;;(defn get-curves [curve]
-;;  (let [instances (for [i (range 0 (.numInstances curve))] (.instance curve i))]
-;;    (zipmap #(
 
 (defn filter-by-recall [curve target-recall]
   (let [positive-tp? (fn [i] (pos? (get-classifier-value :true-positives i) ))
@@ -88,34 +84,7 @@
         instances (for [i (range 0 (.numInstances curve))] (.instance curve i))
         best-instance (->> instances (filter positive-tp?) (apply min-key recall-dist))
         ]
-        ;;(doall (map (fn [i] (println (get-classifier-value :threshold i))) (filter positive-tp? instances)))
-        ;;(doall (fn [i] (println (.value i 7) ", " (.value  i 9))) instances)
         (classifier-instance-to-map best-instance)))
-
-
-
-;; Extracts decision stumps
-;;
-;; CostSensitiveClassifier using reweighted training instances
-;;
-;; weka.classifiers.meta.LogitBoost -P 100 -L -1.7976931348623157E308 -H 1.0 -Z 3.0 -O 1 -E 1 -S 1 -I 10 -W weka.classifiers.trees.DecisionStump
-;;
-;; Classifier Model
-;; LogitBoost: Base classifiers and their weights:
-;;
-;; Iteration 1
-;; 	Class 1 (outcome=false)
-;;
-;; Decision Stump
-;;
-;; Classifications
-;;
-;; emailType_lev_x.gmail <= 0.1868636702259745 : 1.9014956942138093
-;; emailType_lev_x.gmail > 0.1868636702259745 : 1.9706482143168675
-;; emailType_lev_x.gmail is missing : 1.9291591130944088
-;;
-;; Two-class case: second classifier predicts additive inverse of first classifier and is not explicitly computed.
-
 
 
 (defn parse-state [state]
