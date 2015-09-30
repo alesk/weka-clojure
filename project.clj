@@ -6,8 +6,8 @@
   :dependencies [
                  [org.clojure/clojure "1.7.0"]
                  [org.clojure/data.json "0.2.6"]
-                 ;;[nz.ac.waikato.cms.weka/weka-stable "3.6.13"]
-                 [nz.ac.waikato.cms.weka/weka-dev "3.7.13"]
+                 [nz.ac.waikato.cms.weka/weka-stable "3.6.11"]
+                 ;;[nz.ac.waikato.cms.weka/weka-dev "3.7.13"]
                  [ring/ring-core "1.4.0"]
                  [ring/ring-devel "1.4.0"]
                  [ring/ring-json "0.4.0"]
@@ -16,6 +16,6 @@
                  [compojure "1.4.0"]
                  ]
   :plugins [[lein-ring "0.8.11"]]
-  :ring {:handler weka-classifier.core/app-routes}
+  :ring {:handler weka-classifier.core/app}
   :main weka-classifier.core
   )

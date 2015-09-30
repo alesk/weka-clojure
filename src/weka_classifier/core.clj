@@ -1,5 +1,7 @@
 (ns weka-classifier.core
-  (:require [weka-classifier.logit-boost :as lb]
+  (:require
+            [clojure.pprint :refer [pprint]]
+            [weka-classifier.logit-boost :as lb]
             [clojure.data.json :as json]
             [ring.middleware.json :as  middleware]
             [ring.util.response :refer [response]]
@@ -9,43 +11,53 @@
             [compojure.route :as route]
             [org.httpkit.server :refer [run-server]])
 
-  (:import  [java.util Random]
-            [java.lang Math]
+  (:import  [java.lang Math]
   [weka.core Attribute Instance Range]
-  [weka.core.converters ConverterUtils$DataSource]
   [weka.classifiers CostMatrix Evaluation]
-  [weka.classifiers.evaluation ThresholdCurve]
-  [weka.classifiers.evaluation.output.prediction PlainText])
-  )
+  [weka.classifiers.evaluation ThresholdCurve]))
 
-(defn read-features [filename label]
-        (let [features (-> filename (ConverterUtils$DataSource.) (.getDataSet))]
-          (.setClass features (.attribute features label))
-          features))
 
-(defn classify [filename]
+(defn classify [filename label classifierParams]
   (let [
-        features (read-features "/Users/ales/tmp/features.base.csv" "outcome")
-        cs (doto (lb/create-classifier) (.buildClassifier features))
-        curve (lb/cross-validate cs features 10)
+        features (lb/read-features filename label)
+        cs (doto (lb/create-classifier classifierParams) (.buildClassifier features))
+        ev (lb/cross-validate cs features 10)
+        curve (.getCurve (ThresholdCurve.) (.predictions ev))
+        parsed-state (lb/parse-state (str cs))
+        low-sensitive   (lb/filter-by-recall curve 0.9)
+        high-sensitive  (lb/filter-by-recall curve 0.5)
+        r-model (lb/r-model (:stumps parsed-state) (:threshold low-sensitive) (:threshold high-sensitive))
         ]
 
-      ;;(.buildClassifier cs features)
+      (println (str cs))
+      (println (str "The element at position i,j in the matrix "
+                    "is the penalty for classifying an instance "
+                    "of class j (column) as class i (row)."))
+      (println (str "Confusion matrix:\n" (.toMatrixString ev)))
+      (println r-model)
+      (println "\n\n")
 
       {:classifiers {
-                     :low-sensitive   (lb/filter-by-recall curve 0.9)
-                     :high-sensitive  (lb/filter-by-recall curve 0.5)
+                     :low-sensitive   low-sensitive
+                     :high-sensitive  high-sensitive
                      }
        :classifiers-text-output (str cs)
-       :decision-stumps (lb/parse-state (str cs))
+       :decision-stumps parsed-state
+       :r-model r-model
        }))
 
 
 (defn handler [request]
-  (let [params (:json-params request)
-        features-file (:features_file params)]
+  (let [jsonParams (:json-params request)
+        {featuresFile "featuresFile"
+         experimentId "experimentId"
+         label "label"
+         classifierParams "classifierParams"} (:json-params request)
+        ]
 
-  (response (classify features-file))))
+  (pprint jsonParams)
+  (response (merge  (classify featuresFile label classifierParams) {:echo jsonParams}))
+  ))
 
 (defn evaluate-classifier [request])
 
@@ -64,4 +76,5 @@
       (middleware/wrap-json-response)))
 
 (defn -main []
+
   (run-server app {:port 3000 :join? false}))

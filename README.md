@@ -1,14 +1,17 @@
 # weka-classifier
 
-A Clojure library designed to ... well, that part is up to you.
+A small app to help tuning weka classifier.
+
+## Install
+
+Install [leiningen](http://http://leiningen.org/). Follow the instructions on the site.
 
 ## Usage
 
-Send request with curl
+To run auto-updating server:
 
-    curl -H "Content-Type: application/json; charset=utf-8" -vvv \
-      -X POST -d '{"features_file": "/Users/ales/tmp/features.base.csv"}' \
-      http://localhost:3000/evaluate
+    lein ring server
+
 
 ## License
 
