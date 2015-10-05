@@ -3,7 +3,6 @@
             [clojure.pprint :refer [pprint]])
   (:import java.util.Random
     [weka.classifiers.meta LogitBoost CostSensitiveClassifier]
-    [weka.core.converters ConverterUtils$DataSource]
     [weka.classifiers CostMatrix Evaluation]
     [weka.classifiers.evaluation ThresholdCurve]
     [weka.classifiers.trees DecisionStump]))
@@ -27,14 +26,15 @@
                "weightThreshold" 100
                "numRuns" 2
                "numFolds" 0
-               "costMatrix" "[0.0 8.0; 1.0 0.0]"
+               "trueToFalseCost" 8.0
+               "falseToTrueCost" 1.0
                "useResampling" false})
 
-(defn read-features [filename label]
-        (let [features (-> filename (ConverterUtils$DataSource.) (.getDataSet))]
-          (.setClass features (.attribute features label))
-          features))
-
+(defn create-cost-matrix [class-values true-to-false-cost false-to-true-cost]
+  (let [matrix (CostMatrix. 2)]
+    (if (= (first class-values) "true")
+      (doto matrix (.setCell 0 1 true-to-false-cost) (.setCell 1 0 false-to-true-cost))
+      (doto matrix (.setCell 0 1 false-to-true-cost) (.setCell 1 0 true-to-false-cost)))))
 
 (defn classifier-instance-to-map [instance]
   (zipmap classifier-instance-values
@@ -44,7 +44,7 @@
 (defn get-classifier-value [key instance] (.value instance (.indexOf classifier-instance-values key)))
 
 
-(defn create-classifier [params]
+(defn create-classifier [class-values params]
   "Creates LogitBost classifier with Decision Stumps"
   ;; build classifier
   (let [{numIterations "numIterations"
@@ -52,6 +52,8 @@
          costMatrix "costMatrix"
          numRuns "numRuns"
          numFolds "numFolds"
+         trueToFalseCost "trueToFalseCost"
+         falseToTrueCost "falseToTrueCost"
          useResampling "useResampling"
          } (merge defaults params)
         boostClassifier (doto (LogitBoost.)
@@ -61,11 +63,9 @@
                           (.setNumFolds numFolds)
                           (.setWeightThreshold weightThreshold)
                           (.setUseResampling useResampling))
-        costMatrix (CostMatrix/parseMatlab costMatrix)]
+        costMatrix (create-cost-matrix class-values trueToFalseCost falseToTrueCost)]
 
-    (print "Classifier params")
     (pprint (merge defaults params))
-    (pprint (merge params))
 
     (doto (CostSensitiveClassifier.)
       (.setClassifier boostClassifier)
@@ -120,9 +120,10 @@
 (defn r-model [stumps low-threshold, high-threshold]
   (let [ifelses (string/join ",\n  " (map stump-to-if stumps))]
   (str "function() {\n"
+       "  explain <- function(i) cbind(" ifelses ")\n"
        "  f <- function(i) apply(cbind(" ifelses "), 1, sum)/2\n"
        "  p <- function(i) {j <- f(i); e <- exp(j); ne <- exp(-j); e / (e + ne)}\n\n"
        "  classify <- function(i) {p <- p(i); ifelse(p >= " high-threshold" , 'high', ifelse(p >= " low-threshold ", 'ambiguous', 'low'))}\n"
-       "  list(f=f, p=p, classify=classify)\n"
+       "  list(explain=explain, f=f, p=p, classify=classify)\n"
        "}\n")))
 

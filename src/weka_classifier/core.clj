@@ -2,6 +2,7 @@
   (:require
             [clojure.pprint :refer [pprint]]
             [weka-classifier.logit-boost :as lb]
+            [weka-classifier.instances :as ins]
             [clojure.data.json :as json]
             [ring.middleware.json :as  middleware]
             [ring.util.response :refer [response]]
@@ -19,8 +20,9 @@
 
 (defn classify [filename label classifierParams]
   (let [
-        features (lb/read-features filename label)
-        cs (doto (lb/create-classifier classifierParams) (.buildClassifier features))
+        features (ins/read-and-transform-features filename label (get classifierParams "removeFeatures" []))
+        cs (doto (lb/create-classifier (ins/attribute-values features label) classifierParams)
+             (.buildClassifier features))
         ev (lb/cross-validate cs features 10)
         curve (.getCurve (ThresholdCurve.) (.predictions ev))
         parsed-state (lb/parse-state (str cs))
