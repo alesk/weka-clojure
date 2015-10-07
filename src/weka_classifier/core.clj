@@ -57,17 +57,10 @@
                          :high-threshold (:threshold high-sensitive)
                          :ambiguous-threshold (:threshold low-sensitive)}
 
-        r-model2 (lb/r-model (:stumps parsed-state) (:threshold low-sensitive) (:threshold high-sensitive))
         r-model (selmer/render-file "LeadClassifier.R" classifier-data)
         scala-model (selmer/render-file "LeadClassifier.scala" classifier-data)]
 
       (println (str cs))
-      (println (str "The element at position i,j in the matrix "
-                    "is the penalty for classifying an instance "
-                    "of class j (column) as class i (row)."))
-      (println (str "Confusion matrix:\n" (.toMatrixString ev)))
-      (println r-model)
-      (println scala-model)
       (println "\n\n")
 
       {:classifiers {

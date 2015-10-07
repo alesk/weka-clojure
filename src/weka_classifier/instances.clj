@@ -33,6 +33,3 @@
 
 (defn attribute-values [instances name]
   (map str (enumeration-seq (.enumerateValues (.attribute instances name)))))
-
-
-(doall (map println [1 2 3 4 5 ]))
