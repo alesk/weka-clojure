@@ -1,21 +1,43 @@
 (ns weka-classifier.core
   (:require
-            [clojure.pprint :refer [pprint]]
-            [weka-classifier.logit-boost :as lb]
-            [weka-classifier.instances :as ins]
-            [clojure.data.json :as json]
-            [ring.middleware.json :as  middleware]
-            [ring.util.response :refer [response]]
-            [ring.adapter.jetty :as jetty]
-            [compojure.core :refer :all]
-            [compojure.handler :as handler]
-            [compojure.route :as route]
-            [org.httpkit.server :refer [run-server]])
+      [weka-classifier.logit-boost :as lb]
+      [weka-classifier.instances :as ins]
+      [weka-classifier.model :as model]
 
-  (:import  [java.lang Math]
-  [weka.core Attribute Instance Range]
-  [weka.classifiers CostMatrix Evaluation]
-  [weka.classifiers.evaluation ThresholdCurve]))
+      [selmer.parser :as selmer]
+      [clojure.string :as string]
+
+      ;;[clojure.data.json :as json]
+      [ring.middleware.json :as  middleware]
+      [ring.util.response :refer [response]]
+      [ring.adapter.jetty :as jetty]
+      [compojure.core :refer :all]
+      [compojure.handler :as handler]
+      [compojure.route :as route]
+      [org.httpkit.server :refer [run-server]]
+
+      ;; debugging
+      [clojure.pprint :refer [pprint]]
+   )
+
+  (:import
+      java.lang.Math
+      java.util.Date
+      [weka.core Attribute Instance Range]
+      [weka.classifiers CostMatrix Evaluation]
+      [weka.classifiers.evaluation ThresholdCurve]))
+
+
+
+;; add tag that removes all new line chars
+(selmer/add-tag! :squash
+          (fn [args context-map content]
+            (let [text (get-in content [:squash :content])]
+                  (-> text
+                      (string/replace #"[\n\t]" "")
+                      (string/replace #"^\s+" "")
+                      (string/replace #"\s+$" ""))))
+          :endsquash)
 
 
 (defn classify [filename label classifierParams]
@@ -28,8 +50,16 @@
         parsed-state (lb/parse-state (str cs))
         low-sensitive   (lb/filter-by-recall curve 0.9)
         high-sensitive  (lb/filter-by-recall curve 0.5)
-        r-model (lb/r-model (:stumps parsed-state) (:threshold low-sensitive) (:threshold high-sensitive))
-        ]
+        created-at (new java.util.Date)
+        classifier-data {:white-listed-countries (model/white-listed-countries)
+                         :stumps (parsed-state :stumps)
+                         :created-at created-at
+                         :high-threshold (:threshold high-sensitive)
+                         :ambiguous-threshold (:threshold low-sensitive)}
+
+        r-model2 (lb/r-model (:stumps parsed-state) (:threshold low-sensitive) (:threshold high-sensitive))
+        r-model (selmer/render-file "LeadClassifier.R" classifier-data)
+        scala-model (selmer/render-file "LeadClassifier.scala" classifier-data)]
 
       (println (str cs))
       (println (str "The element at position i,j in the matrix "
@@ -37,6 +67,7 @@
                     "of class j (column) as class i (row)."))
       (println (str "Confusion matrix:\n" (.toMatrixString ev)))
       (println r-model)
+      (println scala-model)
       (println "\n\n")
 
       {:classifiers {
@@ -46,6 +77,7 @@
        :classifiers-text-output (str cs)
        :decision-stumps parsed-state
        :r-model r-model
+       :scala-model scala-model
        }))
 
 

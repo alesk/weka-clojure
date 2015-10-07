@@ -49,7 +49,6 @@
   ;; build classifier
   (let [{numIterations "numIterations"
          weightThreshold "weightThreshold"
-         costMatrix "costMatrix"
          numRuns "numRuns"
          numFolds "numFolds"
          trueToFalseCost "trueToFalseCost"
@@ -105,25 +104,10 @@
                         (read-string true-value) (read-string false-value) (read-string na-value)]))
 
         parsed-stumps (map-indexed parse-stump stumps)
-        label-false (= (second label) "false")
+        label-false? (= (second label) "false")
+
         ]
     {:label label
-     :stumps (filter #(odd? (:idx %)) parsed-stumps)}))
-
-(defn stump-to-if [{variable :variable operator :operator threshold :threshold true_value :true_value false_value :false_value}]
-  (let [op (if (= operator "=") "==" operator)
-        quoted-threshold (if (string? threshold) (str "'" threshold "'") threshold)]
-
-  (str "ifelse(i$" variable " " op " " quoted-threshold ", " true_value ", " false_value ")")))
-
-
-(defn r-model [stumps low-threshold, high-threshold]
-  (let [ifelses (string/join ",\n  " (map stump-to-if stumps))]
-  (str "function() {\n"
-       "  explain <- function(i) cbind(" ifelses ")\n"
-       "  f <- function(i) apply(cbind(" ifelses "), 1, sum)/2\n"
-       "  p <- function(i) {j <- f(i); e <- exp(j); ne <- exp(-j); e / (e + ne)}\n\n"
-       "  classify <- function(i) {p <- p(i); ifelse(p >= " high-threshold" , 'high', ifelse(p >= " low-threshold ", 'ambiguous', 'low'))}\n"
-       "  list(explain=explain, f=f, p=p, classify=classify)\n"
-       "}\n")))
-
+     :stumps (if label-false?
+               (filter #(odd? (:idx %)) parsed-stumps)
+               (filter #(even? (:idx %)) parsed-stumps))}))
