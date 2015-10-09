@@ -5,6 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [
                  [org.clojure/clojure "1.7.0"]
+                 [org.clojure/data.csv "0.1.3"]
 
                  ;; managing environments
                  [environ "1.0.1"]
@@ -25,6 +26,9 @@
 
                  ;; templating
                  [selmer "0.9.2"]
+
+                 ;; parsing
+                 [instaparse "1.4.1"]
 
                  ;; web server
                  [ring/ring-core "1.4.0"]

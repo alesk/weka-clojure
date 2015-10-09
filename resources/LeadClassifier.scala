@@ -1,7 +1,7 @@
 package com.toptal.analytics.leadclassification
 
 /**
- * LogitBoost Classifier with decision stamps
+ * LogitBoost Classifier with decision stumps
  *
  * Created: {{created-at}}
  *
@@ -10,11 +10,11 @@ package com.toptal.analytics.leadclassification
 object LeadClassifiers {
   val Default = LeadClassifier(
     ruleDefs = Vector({% for stump in stumps %}
-      {% squash %}{% if stump.operator "=" %}
+      {% squash %}{% ifequal stump.operator = %}
       NominalRuleDef(FeatureDefs.{{stump.variable}}, "{{stump.threshold}}", {{stump.true_value}}f, {{stump.false_value}}f)
       {% else %}
       NumericRuleDef(FeatureDefs.{{stump.variable}}, {{stump.threshold}}, {{stump.true_value}}f, {{stump.false_value}}f)
-      {% endif %}{% endsquash %}{% if not forloop.last%},{% endif %}{% endfor %}
+      {% endifequal %}{% endsquash %}{% if not forloop.last%},{% endif %}{% endfor %}
     ),
     highThreshold = {{high-threshold}},
     ambiguousThreshold = {{ambiguous-threshold}},

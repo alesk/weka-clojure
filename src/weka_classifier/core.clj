@@ -5,11 +5,12 @@
       [weka-classifier.model :as model]
 
       [selmer.parser :as selmer]
+      [selmer.util :refer [turn-off-escaping!]]
       [clojure.string :as string]
 
       ;;[clojure.data.json :as json]
       [ring.middleware.json :as  middleware]
-      [ring.util.response :refer [response]]
+      [ring.util.response :refer [response content-type]]
       [ring.adapter.jetty :as jetty]
       [compojure.core :refer :all]
       [compojure.handler :as handler]
@@ -38,6 +39,7 @@
                       (string/replace #"^\s+" "")
                       (string/replace #"\s+$" ""))))
           :endsquash)
+(turn-off-escaping!)
 
 
 (defn classify [filename label classifierParams]
@@ -61,6 +63,7 @@
         scala-model (selmer/render-file "LeadClassifier.scala" classifier-data)]
 
       (println (str cs))
+      (println r-model)
       (println "\n\n")
 
       {:classifiers {
@@ -91,11 +94,11 @@
 (defroutes app-routes
   (GET "/" [] "Simple classifier evaluation")
   (GET "/hello" [] "Hello")
+  (GET "/application-info" [] (-> (response (.toString (model/application-info-csv))) (content-type "text/csv")))
   (POST "/evaluate" [] handler)
   )
 
-
-        ;; define the ring application
+;; define the ring application
 (def app
   (-> (handler/api app-routes)
       (middleware/wrap-json-body)

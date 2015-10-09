@@ -4,13 +4,13 @@ function() {
   manual.rule <- function(i) !i$country %in% white.listed.countries | i$emailType == 'free'
 
   f <- function(i) apply(cbind({% for stump in stumps %}
-    {% squash %}{% if stump.operator "=" %}
+    {% squash %}{% ifequal stump.operator "=" %}
     ifelse(i${{stump.variable}} == "{{stump.threshold}}", {{stump.true_value}}, {{stump.false_value}})
 
     {% else %}
 
     ifelse(i${{stump.variable}} {{stump.operator}} {{stump.threshold}}, {{stump.true_value}}, {{stump.false_value}})
-    {% endif %}{% endsquash %}{% if not forloop.last%},{% endif %}{% endfor %}
+    {% endifequal %}{% endsquash %}{% if not forloop.last%},{% endif %}{% endfor %}
   ), 1, sum)/2
 
   p <- function(i) {j <- f(i); e <- exp(j); ne <- exp(-j); e / (e + ne)}
