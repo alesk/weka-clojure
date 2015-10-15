@@ -75,6 +75,11 @@
         ]
         (classifier-instance-to-map best-instance)))
 
+(defn curve-to-map [curve]
+  (zipmap classifier-instance-values
+        (map #(into [] (.attributeToDoubleArray curve %)) (range 0 (count classifier-instance-values)))))
+
+
 
 (defn parse-state [state]
   (let [label (drop 1 (re-find #"(?is)Iteration 1.*?\((\w+)=(\w+)\)" state))

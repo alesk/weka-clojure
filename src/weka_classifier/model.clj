@@ -29,13 +29,13 @@
       (map #(when % (second %))[state city adnetwork connection_type])))
 
 (defn application-info []
-  (let [raw (sql/query database-url "SELECT user_id, data FROM application_infos")]
-    (map (fn [{user_id :user_id data :data}] (into [user_id] (-extract-app-info data))) raw)))
+  (let [raw (sql/query database-url "SELECT r.id as role_id, a.created_at, data FROM application_infos a JOIN roles r ON r.user_id = a.user_id ORDER BY created_at DESC")]
+    (map (fn [{role_id :role_id created_at :created_at data :data}] (into [role_id created_at] (extract-app-info data))) raw)))
 
 
 (defn application-info-csv []
   (let [writer (StringWriter.)]
 
-    (csv/write-csv writer (concat [["companyId" "state" "city" "adnetwork" "connectionType"]] (application-info)))
+    (csv/write-csv writer (concat [["companyId" "createdAt" "state" "city" "adnetwork" "connectionType"]] (application-info)))
   writer))
 
