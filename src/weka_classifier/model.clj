@@ -19,7 +19,7 @@
 
 
 
-(defn -extract-app-info [text]
+(defn- extract-app-info [text]
   (let [
         state (re-find #"state: ([^\n]+)" text)
         city (re-find #"city: ([^\n]+)" text)

@@ -22,14 +22,6 @@
    :lift
    :threshold])
 
-(def defaults {"numIterations" 10
-               "weightThreshold" 100
-               "numRuns" 2
-               "numFolds" 0
-               "trueToFalseCost" 8.0
-               "falseToTrueCost" 1.0
-               "useResampling" false})
-
 (defn create-cost-matrix [class-values true-to-false-cost false-to-true-cost]
   (let [matrix (CostMatrix. 2)]
     (if (= (first class-values) "true")
@@ -54,7 +46,7 @@
          trueToFalseCost "trueToFalseCost"
          falseToTrueCost "falseToTrueCost"
          useResampling "useResampling"
-         } (merge defaults params)
+         } params
         boostClassifier (doto (LogitBoost.)
                           (.setClassifier (DecisionStump.))
                           (.setNumIterations numIterations)
@@ -63,8 +55,6 @@
                           (.setWeightThreshold weightThreshold)
                           (.setUseResampling useResampling))
         costMatrix (create-cost-matrix class-values trueToFalseCost falseToTrueCost)]
-
-    (pprint (merge defaults params))
 
     (doto (CostSensitiveClassifier.)
       (.setClassifier boostClassifier)

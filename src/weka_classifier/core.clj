@@ -29,6 +29,17 @@
       [weka.classifiers.evaluation ThresholdCurve]))
 
 
+(def classifier-params-defaults {
+               "numIterations" 10
+               "weightThreshold" 100
+               "numRuns" 2
+               "numFolds" 0
+               "trueToFalseCost" 8.0
+               "falseToTrueCost" 1.0
+               "lowRecall" 0.9
+               "highRecall" 0.5
+               "removeFeatures" []
+               "useResampling" false})
 
 ;; add tag that removes all new line chars
 (selmer/add-tag! :squash
@@ -44,14 +55,15 @@
 
 (defn classify [filename label classifierParams]
   (let [
-        features (ins/read-and-transform-features filename label (get classifierParams "removeFeatures" []))
-        cs (doto (lb/create-classifier (ins/attribute-values features label) classifierParams)
-             (.buildClassifier features))
+        params (merge classifier-params-defaults classifierParams)
+
+        features (ins/read-and-transform-features filename label (params "removeFeatures"))
+        cs (doto (lb/create-classifier (ins/attribute-values features label) params) (.buildClassifier features))
         ev (lb/cross-validate cs features 10)
         curve (.getCurve (ThresholdCurve.) (.predictions ev))
         parsed-state (lb/parse-state (str cs))
-        low-sensitive   (lb/filter-by-recall curve 0.9)
-        high-sensitive  (lb/filter-by-recall curve 0.5)
+        low-sensitive   (lb/filter-by-recall curve (params "lowRecall"))
+        high-sensitive  (lb/filter-by-recall curve (params "highRecall"))
         created-at (new java.util.Date)
         classifier-data {:white-listed-countries (model/white-listed-countries)
                          :stumps (parsed-state :stumps)
@@ -74,6 +86,7 @@
        :decision-stumps parsed-state
        :r-model r-model
        :scala-model scala-model
+       :performance (lb/curve-to-map curve)
        }))
 
 
